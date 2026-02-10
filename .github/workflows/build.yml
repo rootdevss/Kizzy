@@ -2,7 +2,7 @@ name: Test Build
 
 on:
   push:
-    branches: [ "master", "fix-album-art-loading" ]
+    branches: [ "master" ]
     paths-ignore:
       - 'metadata/**'
   pull_request:
