@@ -36,6 +36,7 @@ import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 
 suspend fun HttpResponse.toImageURL(): String? {
@@ -136,12 +137,21 @@ private fun getFileExtension(context: Context, uri: Uri): String? =
     }
 
 fun Context.uriToFile(uri: Uri): File {
-    val file = File(cacheDir,getFileName(uri))
-    val inputStream = contentResolver.openInputStream(uri)
-    inputStream?.use { input ->
-        file.outputStream().use { out ->
-            input.copyTo(out)
+    val file = File(cacheDir, getFileName(uri))
+    try {
+        val inputStream = contentResolver.openInputStream(uri)
+            ?: throw FileNotFoundException("Cannot open input stream for URI: $uri. The file may have been deleted or moved.")
+        inputStream.use { input ->
+            file.outputStream().use { out ->
+                input.copyTo(out)
+            }
         }
+    } catch (e: FileNotFoundException) {
+        // Re-throw with more context
+        throw FileNotFoundException("Failed to load image from URI: $uri. ${e.message}")
+    } catch (e: SecurityException) {
+        // Handle permission issues
+        throw FileNotFoundException("Permission denied for URI: $uri. ${e.message}")
     }
     return file
 }
